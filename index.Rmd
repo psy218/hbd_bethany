@@ -8,7 +8,7 @@ output:
     code_folding: hide
     theme: cosmo
     highlight: tango
-    toc: no
+    toc: yes
     toc_float:
       collapsed: no
       smooth_scroll: no
@@ -22,7 +22,7 @@ editor_options:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning = FALSE)
 options(digits = 2)
-
+cbPalette = c("#999999", "#E69F00", "#56B4E9", "#009E73","#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 # packages 
 library(tidytext)
 library(tidyverse)
@@ -32,13 +32,38 @@ library(wordcloud)
 ```{r include = FALSE}
 # import raw data containing b-day msgs for Bethany
 bday_msg = readxl::read_xlsx(here::here("bday_msg", "bethany_bday.xlsx"))
+
+# Prep data for the analysis
+# "empty"  words
+
+
+# tokenize msgs 
+bday_words = bday_msg %>% 
+  tidytext::unnest_tokens(word, msg) %>% 
+  dplyr::anti_join(tidytext::get_stopwords() %>% 
+                     full_join( tibble(word = c("i’m", "you’re")))) %>% 
+  group_by(sender) %>% 
+  distinct(word) %>% 
+  ungroup()
 ```
 
-  To satiate Bethany's thirst for data visualizations, we solicited birthday messages from those close to Bethany and visualized what they had to say about her.  
+```{r word-cloud}
+# create a word cloud 
+bday_words %>% 
+  count(word, sort = T) %>% 
+  with(wordcloud::wordcloud(word,
+                            freq = n,
+                            min.freq = 1,
+                            max.words = 100,
+                            random.order = F,
+                            colors = cbPalette))
+```
+
+  We are celebrating the birthday of one and only Bethany Lassetter. To satiate Bethany's thirst for data visualization, we solicited birthday messages from the affiliates of Bethany and visualized what they had to say about the day of her birth. To protect the anonymity of Bethany Affiliates, we present their real names.       
 
 # Methods 
 ## Participants  
-  Participants were recruited through slack channel and e-mails; see Figure \@ref(fig:recruitment) for an example recruitment material. Of XX recruited, two (i.e., Paris HiXton and BTS) declined to participate, leaving the final sample of XX. The sample were mostly decent; see [Appendix](#appendix) for the full list of participants.   
+  Participants were recruited through a slack channel and e-mails; see Figure \@ref(fig:recruitment) for an example recruitment material. The final sample of XX Bethany Affiliates was mostly good people; see [Appendix](#appendix) for the full list of participants.   
   
 ```{r recruitment, echo=FALSE, out.width="60%", fig.cap = "An example of recruitment emails."}
 knitr::include_graphics(path = here::here("Fig", "recruitment_email.png"))
@@ -51,15 +76,22 @@ word_counts = bday_msg %>%
   tidytext::unnest_tokens(word, msg) %>% 
   group_by(sender) %>% 
   summarize(word_count = n()) %>% 
-  ungroup() %>% 
+  ungroup() 
+
+# descriptive statistics of word counts 
+wc_stats = word_counts %>% 
   summarize_at("word_count", 
                .funs = list(mean = mean,
                             sd = sd,
                             min = min,
                             max = max))
+
+# find the message with the highest number of words. 
+most_words = word_counts %>% 
+  top_n(word_count, n = 1)
 ```
 
-The number of words used in birthday messages ranged from `r word_counts$min` to `r word_counts$max` words with an average of `r word_counts$mean` ($SD$ = `r word_counts$sd`). See Figure \@ref(fig:word-count-by-sender) for the word counts for each sender.   
+We first present the descriptive statistics of the birthday messages. The number of words in the birthday messages ranged from `r wc_stats$min` to `r wc_stats$max` words with an average of `r round(wc_stats$mean)` ($SD$ = `r wc_stats$sd`) words. A message with the highest number of words was from `r stringr::str_to_title(most_words$sender)` and was `r stringr::str_to_title(most_words$word_count)`-words long. See Figure \@ref(fig:word-count-by-sender) for the word counts for each Bethany affiliate.    
 
 ```{r word-count-by-sender, fig.cap = "Word counts by senders."}
 bday_msg %>% 
@@ -79,69 +111,110 @@ bday_msg %>%
   theme_classic()
 ```
 
-Next, we examined the contents of birthday messages.  
-```{r include=FALSE}
-# Prep data 
-# "empty"  words
-stopwords_custom = tibble(word = c("i’m", "you’re"))
-
-# tokenize msgs 
-bday_words = bday_msg %>% 
-  tidytext::unnest_tokens(word, msg) %>% 
-  dplyr::anti_join(tidytext::get_stopwords() %>% 
-                     full_join(stopwords_custom)) %>% 
-  group_by(sender) %>% 
-  distinct(word) %>% 
-  ungroup()
+Next, we examined the contents of birthday messages. The sentiment analysis using NRC lexicon (Mohammad & Turney, 2013) revealed that most words were mostly positive; See Figure \@ref(fig:word-sentiment) for the proportion of words for each sentiment and Table \@ref(tab:most-common-by-sentiment) for the most common word. 
+```{r word-sentiment, fig.cap = "Proportion of words for each sentiment.", fig.subcap="Actual number of words for each sentiment is labelled."}
+# sentiment analysis
+bday_words %>% 
+  inner_join(get_sentiments("nrc")) %>% 
+  count(sentiment, sort = T) %>% 
+  # arrange(desc(n)) %>% 
+  mutate(prop = n / sum(n)) %>% 
+  ggplot(aes(x = reorder(sentiment, -prop),
+             y = prop, 
+             label = n)) +
+  geom_col(fill = "#999999") +
+  geom_text() +
+  scale_y_continuous("Proportion of Words",
+                     labels = scales::percent) + 
+  scale_x_discrete("Sentiment of Words") +
+  coord_flip() +
+  theme_classic()
+  
 ```
 
-As shown in Figure \@ref(fig:common-words), the most common words included XXX. 
+Next, we examined the most common word in the birthday messages, which was **birthday**. Figure \@ref(fig:common-words) shows the most common words other than "birthday."   
 
 ```{r common-words, fig.cap = "Most common words used in birthday messages."}
 bday_words %>% 
-  add_count(word, sort = TRUE) %>% 
-  top_n(4) %>% 
-  ggplot(aes(x = word, 
-             y = n, 
-             group = sender)) +
-  geom_col() + 
-  geom_text(aes(label = stringr::str_to_title(sender)), position = position_dodge(.8)) +
-  scale_y_continuous("Frequency Counts") + 
+  filter(word != "birthday") %>% 
+  count(word, sort = TRUE) %>%
+  top_frac(.05) %>% 
+  ggplot(aes(x = reorder(word, -n), 
+             y = n)) +
+  geom_col(aes(fill = ifelse(n == max(n), "top", "others"))) + 
+  scale_fill_manual(values = c("#999999", "#D55E00"),
+                    guide = F) +
+  scale_y_continuous("Frequency Counts",
+                     breaks = seq(1:10)) + 
   scale_x_discrete("Words") +
   coord_flip() +
   theme_classic()
 ```
 
-Figure \@ref(fig:common-adj) shows the most common adjectives used in the birthday message. 
-```{r common-adj, fig.cap = "Most common adjectives used in birthday messages."}
+The most common word for each sentiment is shown below.  
+```{r most-common-by-sentiment}
+bday_words %>% 
+  inner_join(get_sentiments("nrc")) %>% 
+  add_count(sentiment) %>% 
+  group_by(sentiment) %>% 
+  slice_max(1) %>% 
+  mutate(word = paste0(word, "(", n, ")")) %>% 
+  select(sentiment, word) %>% 
+  pivot_wider(names_from = sentiment, values_from = word) %>% 
+  knitr::kable(caption = "The most common word for each sentiment.")
+```
+*Note*. The number of times a word is used is indicated in a bracket. 
+
+
+Are messages with a lot of anger words shorter than those with joy words? We examined whether word use of a particular sentiment is associated with the total number of words in a given message. As shown in Figure \@ref(fig:word-cor), the association between the word counts of a given sentiment and the message length is most likely to be nil and inconclusive at best. 
+
+```{r word-cor, fig.cap="Association between sentiment word counts and message length."}
+bday_words %>% 
+  inner_join(get_sentiments("nrc")) %>% 
+  group_by(sender, sentiment) %>% 
+  count() %>% 
+  ungroup() %>% 
+  group_by(sender) %>% 
+  mutate(total_n = sum(n)) %>% 
+  ggplot(aes(x = n,
+             y = total_n,
+             color = sentiment)) + 
+  geom_jitter(alpha = .7) +
+  geom_smooth(method = lm, se = T) +
+  scale_x_continuous("Number of Words") +
+  scale_y_continuous("Total Number of Words") + 
+  scale_color_manual(values = c(cbPalette, "#000000", "#FFC20A")) +
+  theme_classic()
+  
+```
+
+We then classified the words into their parts of speech, and the most common adjectives, nouns, and verbs used are plotted below.   
+```{r}
 bday_words %>% 
   inner_join(parts_of_speech) %>% 
-  filter(pos == "Adjective") %>% 
-  count(word, sort = TRUE) %>% 
-  top_n(5) %>% 
-  ggplot(aes(x = word, 
-             y = n)) +
-  geom_col() + 
-  scale_y_continuous("Frequency Counts") + 
-  scale_x_discrete("Words") +
-  coord_flip() +
-  theme_classic()
+  mutate(pos = ifelse(str_detect(pos, "Verb"), "Verb", pos)) %>% 
+  filter(pos %in% c("Adjective", "Noun", "Verb")) %>% 
+  split(.$pos) %>% 
+  map(., ~{
+    count(., word, sort = TRUE) %>% 
+      top_frac(.1) %>% 
+      ggplot(aes(x = reorder(word, -n), 
+                 y = n)) +
+      geom_col(aes(fill = ifelse(n == max(n), "top", "others"))) + 
+      scale_y_continuous("Frequency Counts") + 
+      scale_x_discrete("Words") +
+      scale_fill_manual(values = c("#999999", "#D55E00"),
+                    guide = F) +
+      labs(title = paste(unique(.$pos))) +
+      coord_flip() +
+  theme_classic()}) 
 ```
 
-
-See Figure \@ref(fig:word-cloud) for word cloud.  
-```{r word-cloud, fig.cap="Word cloud"}
-# create a word cloud 
-bday_words %>% 
-  count(word) %>% 
-  with(wordcloud::wordcloud(word, n))
-```
-
-
-
+The aim of the present work is two-fold: 1) To entertain Bethany's obsession with data visualization and 2) to celebrate Bethany's birthday in the time of pandemic. Our work is the first to demonstrate that birthday wishes can be taken too far, and that our love for Bethany cannot be fitted into a basic paper card. 
 
 # Conclusions  
 ![](Fig/appa.jpg)
+*Picture credit*: Appa & Yang  
 
 # Appendix {#appendix}  
 ```{r bday-msgs}
