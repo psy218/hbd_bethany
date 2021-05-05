@@ -1,0 +1,160 @@
+---
+title: "Longitudinal Study of Bethany Lassetter"
+output: 
+  bookdown::html_document2:
+    fig_caption: yes
+    fig_height: 5
+    fig_width: 8
+    code_folding: hide
+    theme: cosmo
+    highlight: tango
+    toc: no
+    toc_float:
+      collapsed: no
+      smooth_scroll: no
+    df_print: paged
+    self_contained: yes
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning = FALSE)
+options(digits = 2)
+
+# packages 
+library(tidytext)
+library(tidyverse)
+library(wordcloud)
+```
+
+```{r include = FALSE}
+# import raw data containing b-day msgs for Bethany
+bday_msg = readxl::read_xlsx(here::here("bday_msg", "bethany_bday.xlsx"))
+```
+
+  To satiate Bethany's thirst for data visualizations, we solicited birthday messages from those close to Bethany and visualized what they had to say about her.  
+
+# Methods 
+## Participants  
+  Participants were recruited through slack channel and e-mails; see Figure \@ref(fig:recruitment) for an example recruitment material. Of XX recruited, two (i.e., Paris HiXton and BTS) declined to participate, leaving the final sample of XX. The sample were mostly decent; see [Appendix](#appendix) for the full list of participants.   
+  
+```{r recruitment, echo=FALSE, out.width="60%", fig.cap = "An example of recruitment emails."}
+knitr::include_graphics(path = here::here("Fig", "recruitment_email.png"))
+```
+
+# Results  
+
+```{r include = FALSE}
+word_counts = bday_msg %>% 
+  tidytext::unnest_tokens(word, msg) %>% 
+  group_by(sender) %>% 
+  summarize(word_count = n()) %>% 
+  ungroup() %>% 
+  summarize_at("word_count", 
+               .funs = list(mean = mean,
+                            sd = sd,
+                            min = min,
+                            max = max))
+```
+
+The number of words used in birthday messages ranged from `r word_counts$min` to `r word_counts$max` words with an average of `r word_counts$mean` ($SD$ = `r word_counts$sd`). See Figure \@ref(fig:word-count-by-sender) for the word counts for each sender.   
+
+```{r word-count-by-sender, fig.cap = "Word counts by senders."}
+bday_msg %>% 
+  tidytext::unnest_tokens(word, msg) %>% 
+  group_by(sender) %>% 
+  summarize(word_count = n()) %>% 
+  ggplot(aes(x = reorder(sender, -word_count),
+             y = word_count)) +
+  geom_col() +
+  geom_text(aes(label = word_count),
+            # colour = "#0072B2",
+            fontface = "bold",
+            vjust = "bottom") +
+  scale_y_continuous("Number of Words Used in Messages") + 
+  scale_x_discrete("Name of Senders",
+                   labels = stringr::str_to_title) +
+  theme_classic()
+```
+
+Next, we examined the contents of birthday messages.  
+```{r include=FALSE}
+# Prep data 
+# "empty"  words
+stopwords_custom = tibble(word = c("i’m", "you’re"))
+
+# tokenize msgs 
+bday_words = bday_msg %>% 
+  tidytext::unnest_tokens(word, msg) %>% 
+  dplyr::anti_join(tidytext::get_stopwords() %>% 
+                     full_join(stopwords_custom)) %>% 
+  group_by(sender) %>% 
+  distinct(word) %>% 
+  ungroup()
+```
+
+As shown in Figure \@ref(fig:common-words), the most common words included XXX. 
+
+```{r common-words, fig.cap = "Most common words used in birthday messages."}
+bday_words %>% 
+  add_count(word, sort = TRUE) %>% 
+  top_n(4) %>% 
+  ggplot(aes(x = word, 
+             y = n, 
+             group = sender)) +
+  geom_col() + 
+  geom_text(aes(label = stringr::str_to_title(sender)), position = position_dodge(.8)) +
+  scale_y_continuous("Frequency Counts") + 
+  scale_x_discrete("Words") +
+  coord_flip() +
+  theme_classic()
+```
+
+Figure \@ref(fig:common-adj) shows the most common adjectives used in the birthday message. 
+```{r common-adj, fig.cap = "Most common adjectives used in birthday messages."}
+bday_words %>% 
+  inner_join(parts_of_speech) %>% 
+  filter(pos == "Adjective") %>% 
+  count(word, sort = TRUE) %>% 
+  top_n(5) %>% 
+  ggplot(aes(x = word, 
+             y = n)) +
+  geom_col() + 
+  scale_y_continuous("Frequency Counts") + 
+  scale_x_discrete("Words") +
+  coord_flip() +
+  theme_classic()
+```
+
+
+See Figure \@ref(fig:word-cloud) for word cloud.  
+```{r word-cloud, fig.cap="Word cloud"}
+# create a word cloud 
+bday_words %>% 
+  count(word) %>% 
+  with(wordcloud::wordcloud(word, n))
+```
+
+
+
+
+# Conclusions  
+![](Fig/appa.jpg)
+
+# Appendix {#appendix}  
+```{r bday-msgs}
+DT::datatable(bday_msg %>% 
+                mutate_at("sender", stringr::str_to_title) %>% 
+                arrange(sender), 
+              extensions = "Scroller",
+                options = list(
+                  # scrollY = 400,
+                  # scroller = TRUE,
+                  # pageLength = 1,
+                  autoWidth = TRUE,
+                  columnDefs = list(list(width = '10%', targets = 0))),
+                rownames = FALSE)
+```
+
