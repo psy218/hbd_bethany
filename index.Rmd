@@ -192,7 +192,7 @@ bday_words %>%
   ggplot(aes(x = n,
              y = total_n,
              color = sentiment)) + 
-  geom_jitter(alpha = .7) +
+  geom_jitter(alpha = .6) +
   geom_smooth(method = lm, se = T) +
   scale_x_continuous("Number of Words") +
   scale_y_continuous("Total Number of Words") + 
@@ -210,17 +210,18 @@ bday_words %>%
   split(.$pos) %>% 
   map(., ~{
     count(., word, sort = TRUE) %>% 
-      top_frac(.1) %>% 
+      top_frac(.10) %>% 
       ggplot(aes(x = reorder(word, -n), 
                  y = n)) +
       geom_col(aes(fill = ifelse(n == max(n), "top", "others"))) + 
-      scale_y_continuous("Frequency Counts") + 
+      scale_y_continuous("Frequency Counts",
+                         breaks = seq(1:13)) + 
       scale_x_discrete("Words") +
       scale_fill_manual(values = c("#999999", "#D55E00"),
-                    guide = F) +
+                        guide = F) +
       labs(title = paste(unique(.$pos))) +
       coord_flip() +
-  theme_classic()}) 
+      theme_classic()}) 
 ```
 
 # Discussion    
