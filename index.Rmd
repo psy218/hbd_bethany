@@ -58,7 +58,7 @@ bday_words = bday_msg %>%
   ungroup()
 ```
 
-```{r word-cloud}
+```{r word-cloud, out.width = "100%"}
 # create a word cloud 
 bday_words %>% 
   count(word, sort = T) %>% 
@@ -102,6 +102,7 @@ most_words = word_counts %>%
   top_n(word_count, n = 1)
 ```
 
+
 We first present the descriptive statistics of the birthday messages. The number of words in the birthday messages ranged from `r wc_stats$min` to `r wc_stats$max` words with an average of `r round(wc_stats$mean)` words ($SD$ = `r wc_stats$sd`). A message with the highest number of words was from `r stringr::str_to_title(most_words$sender)` and was `r stringr::str_to_title(most_words$word_count)`-words long. See Figure \@ref(fig:word-count-by-sender) for the word counts for each Bethany affiliate.    
 
 ```{r word-count-by-sender, fig.cap = "Word counts by senders."}
@@ -123,6 +124,7 @@ bday_msg %>%
   theme_classic()
 ```
 
+
 Next, we examined the contents of birthday messages. The sentiment analysis using NRC lexicon (Mohammad & Turney, 2013) revealed that most words were mostly positive; See Figure \@ref(fig:word-sentiment) for the proportion of words for each sentiment and Table \@ref(tab:most-common-by-sentiment) for the most common word. 
 ```{r word-sentiment, fig.cap = "Proportion of words for each sentiment.", fig.subcap="Actual number of words for each sentiment is labelled."}
 # sentiment analysis
@@ -143,6 +145,9 @@ bday_words %>%
   theme_classic()
   
 ```
+*Note*. The number of words is indicated in a bracket. 
+
+
 
 Next, we examined the most common word in the birthday messages, which was **birthday**. Figure \@ref(fig:common-words) shows the most common words other than "birthday."   
 
