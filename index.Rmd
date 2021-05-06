@@ -168,10 +168,10 @@ The most common word for each sentiment is shown below.
 ```{r most-common-by-sentiment}
 bday_words %>% 
   inner_join(get_sentiments("nrc")) %>% 
-  add_count(sentiment) %>% 
+  count(sentiment, word, name = "word_count", sort = T) %>% 
   group_by(sentiment) %>% 
-  slice_max(1) %>% 
-  mutate(word = paste0(word, " (", n, ")")) %>% 
+  slice_head(n = 1) %>% 
+  mutate(word = paste0(word, " (", word_count, ")")) %>% 
   select(sentiment, word) %>% 
   pivot_wider(names_from = sentiment, values_from = word) %>% 
   knitr::kable(caption = "The most common word for each sentiment.")
