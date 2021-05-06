@@ -113,7 +113,6 @@ bday_msg %>%
              y = word_count)) +
   geom_col(aes(fill = ifelse(word_count == max(word_count), "top", "others"))) + 
   geom_text(aes(label = word_count),
-            # colour = "#0072B2",
             fontface = "bold",
             vjust = "bottom") +
   scale_fill_manual(values = c("#999999", "#D55E00"),
