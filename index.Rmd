@@ -1,5 +1,6 @@
 ---
 title: "Longitudinal Study of Bethany Lassetter"
+date: "May 7th, 2021"
 output: 
   bookdown::html_document2:
     fig_caption: yes
@@ -145,7 +146,7 @@ bday_words %>%
   theme_classic()
   
 ```
-*Note*. The number of words is indicated in a bracket. 
+*Note*. The number of respective sentiment words is labeled beside the columns.  
 
 
 
