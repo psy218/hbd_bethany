@@ -47,7 +47,10 @@ bday_msg = bday_msg %>%
                                                   ":desert_island:" = "\U1F3DD",
                                                   ":tropical_drink:" = "\U1F379",
                                                   ":full_moon_with_face:" = "\U1F31D",
-                                                  ":thumb_up:" = "\U1F44D")))
+                                                  ":thumb_up:" = "\U1F44D",
+                                                  ":tada:" = "\U1F389",
+                                                  ":bouquet:" = "\U1F490",
+                                                  ":champagne:" = "\U1F942")))
 
 # Prep data for the analysis: tokenize msgs 
 bday_words = bday_msg %>% 
@@ -71,13 +74,14 @@ bday_words %>%
                             colors = cbPalette))
 ```
 
-  We are celebrating the birthday of one and only Bethany Lassetter. To satiate Bethany's thirst for data visualization, we solicited birthday messages from the affiliates of Bethany and visualized what they had to say about the day of her birth. To protect the anonymity of Bethany Affiliates, we present their real names.       
+We are celebrating the birthday of one and only Bethany Lassetter. To satiate Bethany's thirst for data visualization, we solicited birthday messages from the affiliates of Bethany and visualized what they had to say about the day of her birth. To protect the anonymity of Bethany Affiliates, we present their real names.       
+<br></br>
 
 # Methods 
 ## Participants  
-  Participants were recruited through a slack channel and e-mails; see Figure \@ref(fig:recruitment) for an example recruitment material. The final sample of `r nrow(bday_msg)` Bethany Affiliates was mostly good people; see [Appendix](#appendix) for the full list of participants.   
+  Participants were recruited through slack and e-mail; see Figure \@ref(fig:recruitment) for an example recruitment material. The final sample of `r nrow(bday_msg)` Bethany Affiliates was mostly good people; see [Appendix](#appendix) for the full list of participants.   
   
-```{r recruitment, echo=FALSE, out.width="60%", fig.cap = "An example of recruitment emails."}
+```{r recruitment, echo=FALSE, out.width="70%", fig.cap = "An example of recruitment emails."}
 knitr::include_graphics(path = here::here("Fig", "recruitment_email.png"))
 ```
 
@@ -125,7 +129,7 @@ bday_msg %>%
   theme_classic()
 ```
 
-
+<br></br>
 Next, we examined the contents of birthday messages. The sentiment analysis using NRC lexicon (Mohammad & Turney, 2013) revealed that most words were mostly positive; See Figure \@ref(fig:word-sentiment) for the proportion of words for each sentiment and Table \@ref(tab:most-common-by-sentiment) for the most common word. 
 ```{r word-sentiment, fig.cap = "Proportion of words for each sentiment.", fig.subcap="Actual number of words for each sentiment is labelled."}
 # sentiment analysis
@@ -149,12 +153,12 @@ bday_words %>%
 *Note*. The number of respective sentiment words is labeled beside the columns.  
 
 
-
-Next, we examined the most common word in the birthday messages, which was **birthday**. Figure \@ref(fig:common-words) shows the most common words other than "birthday."   
+<br></br>
+We examined the most common word in the birthday messages, which was **birthday**. Figure \@ref(fig:common-words) shows the most common words other than "birthday."   
 
 ```{r common-words, fig.cap = "Most common words used in birthday messages."}
 bday_words %>% 
-  filter(word != "birthday") %>% 
+  filter(word != "birthday", word != "bethany") %>% 
   count(word, sort = TRUE) %>%
   top_frac(.05) %>% 
   mutate(word = fct_reorder(word, n)) %>% 
@@ -184,7 +188,7 @@ bday_words %>%
 ```
 *Note*. The number of times a word is used is indicated in a bracket. 
 
-
+<br></br>
 Are messages with a lot of anger words shorter than those with joy words? We examined whether word use of a particular sentiment is associated with the total number of words in a given message. As shown in Figure \@ref(fig:word-cor), the association between the word counts of a given sentiment and the message length is most likely to be nil and inconclusive at best. 
 
 ```{r word-cor, fig.cap="Association between sentiment word counts and message length."}
@@ -207,9 +211,11 @@ bday_words %>%
   
 ```
 
+<br></br>
 We then classified the words into their parts of speech, and the most common adjectives, nouns, and verbs used are plotted below.   
 ```{r}
 bday_words %>% 
+  filter(word != "bethany") %>% 
   inner_join(parts_of_speech) %>% 
   mutate(pos = ifelse(str_detect(pos, "Verb"), "Verb", pos)) %>% 
   filter(pos %in% c("Adjective", "Noun", "Verb")) %>% 
